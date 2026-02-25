@@ -29,11 +29,8 @@ button.secondary { background: #777; }
 <label>Peso médio do comprimido (g):</label>
 <input type="text" id="pesoMedio" placeholder="Ex: 0,130">
 
-<label>Quantidade requerida (unidades):</label>
-<input type="text" id="qtdRequerida" placeholder="Ex: 100000">
-
-<label>Peso da tara da barrica (kg):</label>
-<input type="text" id="taraBarrica" placeholder="Ex: 3,2">
+<label>Quantidade necessária de comprimidos:</label>
+<input type="text" id="qtdNecessaria" placeholder="Ex: 100000">
 
 <button type="button" onclick="calcular()">Calcular</button>
 <button type="button" class="secondary" onclick="limpar()">Limpar</button>
@@ -87,7 +84,7 @@ function gerarBarricas() {
         container.className = "barrica";
 
         let label = document.createElement("label");
-        label.textContent = "Barrica " + (i + 1) + " – Peso bruto (kg):";
+        label.textContent = "Barrica " + (i + 1) + " – Peso (kg):";
 
         let input = document.createElement("input");
         input.type = "text";
@@ -104,70 +101,65 @@ function gerarBarricas() {
 
 // aplica formatação automática nos campos principais
 aplicarFormatacaoAutomatica(document.getElementById("pesoMedio"), "decimal");
-aplicarFormatacaoAutomatica(document.getElementById("qtdRequerida"), "inteiro");
-aplicarFormatacaoAutomatica(document.getElementById("taraBarrica"), "decimal");
+aplicarFormatacaoAutomatica(document.getElementById("qtdNecessaria"), "inteiro");
 
 function calcular() {
     var qtd = parseInt(document.getElementById("qtdBarricas").value, 10);
-    var pesoMedio = parseGramas(document.getElementById("pesoMedio").value); // kg
-    var necessario = parseInteiro(document.getElementById("qtdRequerida").value);
-    var tara = parseKg(document.getElementById("taraBarrica").value) || 3.2;
+    var pesoMedio = parseGramas(document.getElementById("pesoMedio").value); // peso médio em kg
+    var necessario = parseInteiro(document.getElementById("qtdNecessaria").value);
     var resultado = document.getElementById("resultado");
 
-    var pesosBrutos = [];
-    var pesoTotalLiquido = 0;
+    var pesos = [];
+    var pesoTotal = 0;
     for (var i = 0; i < qtd; i++) {
-        var bruto = parseKg(document.getElementById("b" + i).value);
-        var liquido = bruto - tara;
-        pesosBrutos.push({bruto, liquido});
-        pesoTotalLiquido += liquido;
+        var p = parseKg(document.getElementById("b" + i).value);
+        pesos.push(p);
+        pesoTotal += p;
     }
 
-    var comprimidosPossiveis = Math.floor(pesoTotalLiquido / pesoMedio);
+    var comprimidosPossiveis = Math.floor(pesoTotal / pesoMedio);
 
     var texto = "";
-    texto += "Peso total líquido disponível: " + pesoTotalLiquido.toLocaleString("pt-BR") + " kg\n";
-    texto += "Comprimidos possíveis (unidades): " + comprimidosPossiveis.toLocaleString("pt-BR") + "\n";
-    texto += "Comprimidos requeridos: " + (isNaN(necessario) ? 0 : necessario.toLocaleString("pt-BR")) + "\n\n";
+    texto += "Peso total disponível: " + pesoTotal.toLocaleString("pt-BR") + " kg\n";
+    texto += "Comprimidos possíveis (quantidade em unidades): " + (isNaN(comprimidosPossiveis) ? 0 : comprimidosPossiveis.toLocaleString("pt-BR")) + "\n";
+    texto += "Comprimidos necessários: " + (isNaN(necessario) ? 0 : necessario.toLocaleString("pt-BR")) + "\n\n";
 
     var excedenteTotal = comprimidosPossiveis - necessario;
 
     if (comprimidosPossiveis < necessario) {
         var falta = necessario - comprimidosPossiveis;
         var perc = (falta / necessario) * 100;
-        texto += "⚠️ Quantidade disponível insuficiente. Faltando " + perc.toFixed(2) + "% do lote.\n";
+        texto += "⚠️ A quantidade disponível não é suficiente. Está faltando " + perc.toLocaleString("pt-BR") + "% do lote.\n";
         resultado.textContent = texto;
         return;
     }
 
     if (excedenteTotal <= 10000) {
-        texto += "✅ Quantidade disponível atende ao necessário. Não é preciso desmembrar nenhuma barrica.\n";
+        texto += "✅ A quantidade disponível atende ao necessário. Não é preciso desmembrar nenhuma barrica.\n";
         resultado.textContent = texto;
         return;
     }
 
-    // Determinar última barrica usada
+    // retirar excedente da última barrica usada
     var soma = 0, indice = -1;
-    for (var j = 0; j < pesosBrutos.length; j++) {
-        soma += pesosBrutos[j].liquido / pesoMedio; // soma em comprimidos
+    for (var j = 0; j < pesos.length; j++) {
+        soma += pesos[j] / pesoMedio; // soma em comprimidos
         if (soma >= necessario) { indice = j; break; }
     }
 
-    var excedenteLocal = soma - necessario; // comprimidos
-    var pesoExcedenteKg = excedenteLocal * pesoMedio;
-    var pesoBruto = pesosBrutos[indice].bruto;
-    var pesoLiquido = pesosBrutos[indice].liquido - pesoExcedenteKg;
-    if (pesoLiquido < 0) pesoLiquido = 0;
+    var excedenteLocal = soma - necessario; // excedente em comprimidos
+    var excedenteKg = excedenteLocal * pesoMedio; // converte excedente para kg
+    var pesoOriginal = pesos[indice];
+    var pesoQuePermanece = pesoOriginal - excedenteKg;
+    if (pesoQuePermanece < 0) pesoQuePermanece = 0;
+
     var excedenteUnidades = Math.round(excedenteLocal);
 
     texto += "⚠️ Há excedente de comprimidos. Será necessário retirar parte da última barrica utilizada.\n";
     texto += "Barrica utilizada: " + (indice + 1) + "\n";
-    texto += "Peso bruto da barrica: " + pesoBruto.toLocaleString("pt-BR") + " kg\n";
-    texto += "Tara da barrica: " + tara.toLocaleString("pt-BR") + " kg\n";
-    texto += "Quantidade retornando ao stage: " + pesoExcedenteKg.toLocaleString("pt-BR") + " kg (" + excedenteUnidades.toLocaleString("pt-BR") + " unidades)\n";
-
-    var unidadesUtilizadas = Math.round(pesoLiquido / pesoMedio);
-    texto += "Quantidade requerida: " + pesoLiquido.toLocaleString("pt-BR") + " kg (" + unidadesUtilizadas.toLocaleString("pt-BR") + " unidades)\n";
+    texto += "Peso líquido da barrica: " + pesoOriginal.toLocaleString("pt-BR") + " kg\n";
+    texto += "Quantidade retornando ao stage: " + excedenteKg.toLocaleString("pt-BR") + " kg (" + excedenteUnidades.toLocaleString("pt-BR") + " comprimidos)\n";
+    texto += "Quantidade utilizada em sala: " + pesoQuePermanece.toLocaleString("pt-BR") + " kg\n";
 
     resultado.textContent = texto;
 }
