@@ -3,22 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Desmembramento de Granel</title>
+<title>Desmembramento de Granel - Mobile</title>
 <style>
-body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 16px; color: #222; }
-h1 { text-align: center; color: #006e4a; font-size: 22px; margin-bottom: 16px; }
-.container { background: #fff; padding: 16px; border-radius: 12px; max-width: 600px; margin: auto; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
-label { display: block; margin-top: 12px; font-size: 14px; }
-input { width: 100%; padding: 10px; margin-top: 6px; font-size: 16px; border-radius: 6px; border: 1px solid #bbb; }
-button { width: 100%; padding: 12px; margin-top: 16px; font-size: 16px; border-radius: 8px; border: none; background: #006e4a; color: #fff; }
-button.secondary { background: #777; }
-.barrica { margin-top: 8px; }
-#resultado { margin-top: 20px; padding: 14px; background: #e8f5e9; border-left: 5px solid #006e4a; border-radius: 6px; white-space: pre-wrap; font-size: 14px; }
+body {
+    font-family: Arial, sans-serif;
+    background: #e9ecef;
+    padding: 16px;
+    color: #222;
+}
+h1 {
+    text-align: center;
+    color: #004d36;
+    margin-bottom: 16px;
+    font-size: 20px;
+}
+.container {
+    background: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    max-width: 500px;
+    margin: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+label {
+    display: block;
+    margin-top: 12px;
+    font-size: 14px;
+}
+input {
+    width: 100%;
+    padding: 14px;
+    margin-top: 6px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    box-sizing: border-box;
+}
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 16px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    background: #006e4a;
+    color: #fff;
+    cursor: pointer;
+}
+button:hover {
+    background: #00563a;
+}
+button.secondary {
+    background: #888;
+}
+#resultado {
+    margin-top: 20px;
+    padding: 16px;
+    background: #f1f8f4;
+    border-left: 6px solid #006e4a;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    font-size: 14px;
+}
+.progress-bar {
+    width: 100%;
+    background: #ddd;
+    border-radius: 8px;
+    margin-top: 8px;
+    height: 20px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    background: #006e4a;
+    width: 0%;
+    transition: width 0.3s;
+}
+.alert-verde { color: #006e4a; }
+.alert-amarelo { color: #b38f00; }
+.alert-vermelho { color: #c00000; }
 </style>
 </head>
 <body>
 
 <h1>Desmembramento de Granel</h1>
+
 <div class="container">
 
 <label>Quantidade de barricas:</label>
@@ -34,139 +103,120 @@ button.secondary { background: #777; }
 
 <button type="button" onclick="calcular()">Calcular</button>
 <button type="button" class="secondary" onclick="limpar()">Limpar</button>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
 <div id="resultado"></div>
 
 </div>
 
 <script>
-// Funções de parsing
-function parseGramas(v) {
-    if (!v) return 0;
-    let numero = parseFloat(v.replace(/\./g, '').replace(',', '.'));
-    return numero / 1000; // gramas → kg
-}
-function parseKg(v) {
-    if (!v) return 0;
-    let numero = parseFloat(v.replace(/\./g, '').replace(',', '.'));
-    return numero; // já em kg
-}
-function parseInteiro(v) {
-    if (!v) return 0;
-    return parseInt(v.replace(/\./g, '').replace(',', ''), 10);
-}
+const taraBarrica = 3.2;
 
-// Função de formatação automática em tempo real
+/* ========================= FORMATAÇÃO AUTOMÁTICA ========================= */
 function aplicarFormatacaoAutomatica(campo, tipo="inteiro") {
     campo.addEventListener("input", function(e) {
         let valor = e.target.value.replace(/\D/g, "");
-        if (!valor) {
-            e.target.value = "";
-            return;
-        }
-        if (tipo === "inteiro") {
-            let numero = parseInt(valor, 10);
+        if (!valor) { e.target.value=""; return; }
+        if(tipo==="inteiro") {
+            let numero = parseInt(valor,10);
             e.target.value = numero.toLocaleString("pt-BR");
-        } else if (tipo === "decimal") {
-            let numero = parseFloat(valor) / 1000;
-            e.target.value = numero.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        }
+        if(tipo==="decimal") {
+            let numero = parseFloat(valor)/1000;
+            e.target.value = numero.toLocaleString("pt-BR",{minimumFractionDigits:3,maximumFractionDigits:3});
         }
     });
 }
 
-function gerarBarricas() {
-    var qtd = parseInt(document.getElementById("qtdBarricas").value, 10);
-    var div = document.getElementById("barricas");
-    div.innerHTML = "";
-    if (!qtd || qtd <= 0) return;
+/* ========================= PARSERS ========================= */
+function parseGramas(v){return v?parseFloat(v.replace(/\./g,'').replace(',','.'))/1000:0;}
+function parseKg(v){return v?parseFloat(v.replace(/\./g,'').replace(',','.')):0;}
+function parseInteiro(v){return v?parseInt(v.replace(/\./g,'').replace(',',''),10):0;}
 
-    for (var i = 0; i < qtd; i++) {
-        let container = document.createElement("div");
-        container.className = "barrica";
-
-        let label = document.createElement("label");
-        label.textContent = "Barrica " + (i + 1) + " – Peso (kg):";
-
-        let input = document.createElement("input");
-        input.type = "text";
-        input.id = "b" + i;
-        input.placeholder = "Ex: 25,5";
-
-        aplicarFormatacaoAutomatica(input, "decimal");
-
-        container.appendChild(label);
-        container.appendChild(input);
-        div.appendChild(container);
+/* ========================= GERAR BARRICAS ========================= */
+function gerarBarricas(){
+    let qtd=parseInt(document.getElementById("qtdBarricas").value),div=document.getElementById("barricas");
+    div.innerHTML="";
+    if(!qtd||qtd<=0)return;
+    for(let i=0;i<qtd;i++){
+        let container=document.createElement("div");
+        let label=document.createElement("label");
+        label.textContent=`Barrica ${i+1} – Peso líquido (kg):`;
+        let input=document.createElement("input");
+        input.type="text"; input.id="b"+i; input.placeholder="Ex: 25,5";
+        aplicarFormatacaoAutomatica(input,"decimal");
+        container.appendChild(label); container.appendChild(input); div.appendChild(container);
     }
 }
+aplicarFormatacaoAutomatica(document.getElementById("pesoMedio"),"decimal");
+aplicarFormatacaoAutomatica(document.getElementById("qtdNecessaria"),"inteiro");
 
-// aplica formatação automática nos campos principais
-aplicarFormatacaoAutomatica(document.getElementById("pesoMedio"), "decimal");
-aplicarFormatacaoAutomatica(document.getElementById("qtdNecessaria"), "inteiro");
-
-function calcular() {
-    var qtd = parseInt(document.getElementById("qtdBarricas").value, 10);
-    var pesoMedio = parseGramas(document.getElementById("pesoMedio").value); // peso médio em kg
-    var necessario = parseInteiro(document.getElementById("qtdNecessaria").value);
-    var resultado = document.getElementById("resultado");
-
-    var pesos = [];
-    var pesoTotal = 0;
-    for (var i = 0; i < qtd; i++) {
-        var p = parseKg(document.getElementById("b" + i).value);
-        pesos.push(p);
-        pesoTotal += p;
+/* ========================= CÁLCULO ========================= */
+function calcular(){
+    let qtd=parseInt(document.getElementById("qtdBarricas").value),
+        pesoMedio=parseGramas(document.getElementById("pesoMedio").value),
+        necessario=parseInteiro(document.getElementById("qtdNecessaria").value),
+        resultado=document.getElementById("resultado"),
+        progressFill=document.getElementById("progressFill");
+    if(!qtd||qtd<=0){resultado.textContent="⚠️ Informe a quantidade de barricas."; return;}
+    if(!pesoMedio||pesoMedio<=0){resultado.textContent="⚠️ Peso médio inválido."; return;}
+    if(!necessario||necessario<=0){resultado.textContent="⚠️ Quantidade necessária inválida."; return;}
+    
+    let pesos=[],pesoTotalLiquido=0;
+    for(let i=0;i<qtd;i++){
+        let p=parseKg(document.getElementById("b"+i).value);
+        if(!p||p<=0){resultado.textContent=`⚠️ Peso inválido na barrica ${i+1}.`; return;}
+        pesos.push(p); pesoTotalLiquido+=p;
     }
 
-    var comprimidosPossiveis = Math.floor(pesoTotal / pesoMedio);
+    let taraTotal=taraBarrica*qtd;
+    let pesoTotalBruto=pesoTotalLiquido+taraTotal;
+    let comprimidosPossiveis=Math.floor(pesoTotalLiquido/pesoMedio);
 
-    var texto = "";
-    texto += "Peso total disponível: " + pesoTotal.toLocaleString("pt-BR") + " kg\n";
-    texto += "Comprimidos possíveis (quantidade em unidades): " + (isNaN(comprimidosPossiveis) ? 0 : comprimidosPossiveis.toLocaleString("pt-BR")) + "\n";
-    texto += "Comprimidos necessários: " + (isNaN(necessario) ? 0 : necessario.toLocaleString("pt-BR")) + "\n\n";
+    let texto="",perc=Math.min(100,(comprimidosPossiveis/necessario)*100);
+    texto+=`Peso total líquido disponível: ${pesoTotalLiquido.toLocaleString("pt-BR")} kg\n`;
+    texto+=`Peso total bruto (com tara): ${pesoTotalBruto.toLocaleString("pt-BR")} kg\n`;
+    texto+=`Tara total das barricas: ${taraTotal.toLocaleString("pt-BR")} kg\n\n`;
+    texto+=`Comprimidos possíveis: ${comprimidosPossiveis.toLocaleString("pt-BR")}\n`;
+    texto+=`Comprimidos necessários: ${necessario.toLocaleString("pt-BR")}\n\n`;
 
-    var excedenteTotal = comprimidosPossiveis - necessario;
+    progressFill.style.width=perc+"%";
+    progressFill.style.backgroundColor=perc<100?"#b38f00":"#006e4a";
 
-    if (comprimidosPossiveis < necessario) {
-        var falta = necessario - comprimidosPossiveis;
-        var perc = (falta / necessario) * 100;
-        texto += "⚠️ A quantidade disponível não é suficiente. Está faltando " + perc.toLocaleString("pt-BR") + "% do lote.\n";
-        resultado.textContent = texto;
-        return;
+    if(comprimidosPossiveis<necessario){
+        texto+="⚠️ Quantidade insuficiente para atender o lote.";
+        progressFill.style.backgroundColor="#c00000"; resultado.textContent=texto; return;
     }
 
-    if (excedenteTotal <= 10000) {
-        texto += "✅ A quantidade disponível atende ao necessário. Não é preciso desmembrar nenhuma barrica.\n";
-        resultado.textContent = texto;
-        return;
-    }
+    let soma=0,indice=-1;
+    for(let j=0;j<pesos.length;j++){soma+=pesos[j]/pesoMedio;if(soma>=necessario){indice=j; break;}}
 
-    // retirar excedente da última barrica usada
-    var soma = 0, indice = -1;
-    for (var j = 0; j < pesos.length; j++) {
-        soma += pesos[j] / pesoMedio; // soma em comprimidos
-        if (soma >= necessario) { indice = j; break; }
-    }
+    let excedenteLocal=soma-necessario;
+    let excedenteKg=excedenteLocal*pesoMedio;
+    let excedenteUnidades=Math.round(excedenteLocal);
 
-    var excedenteLocal = soma - necessario; // excedente em comprimidos
-    var excedenteKg = excedenteLocal * pesoMedio; // converte excedente para kg
-    var pesoOriginal = pesos[indice];
-    var pesoQuePermanece = pesoOriginal - excedenteKg;
-    if (pesoQuePermanece < 0) pesoQuePermanece = 0;
+    let pesoOriginal=pesos[indice],pesoQuePermanece=pesoOriginal-excedenteKg;
+    if(pesoQuePermanece<0)pesoQuePermanece=0;
+    let pesoBrutoOriginal=pesoOriginal+taraBarrica;
+    let pesoBrutoUtilizado=pesoQuePermanece+taraBarrica;
 
-    var excedenteUnidades = Math.round(excedenteLocal);
+    texto+="⚠️ Excedente identificado. Desmembramento necessário.\n\n";
+    texto+=`Barrica utilizada: ${indice+1}\n`;
+    texto+=`Peso líquido da barrica: ${pesoOriginal.toLocaleString("pt-BR")} kg\n`;
+    texto+=`Peso bruto da barrica: ${pesoBrutoOriginal.toLocaleString("pt-BR")} kg\n\n`;
+    texto+=`Quantidade retornando ao stage: ${excedenteKg.toLocaleString("pt-BR")} kg (${excedenteUnidades.toLocaleString("pt-BR")} comprimidos)\n\n`;
+    texto+="Quantidade utilizada em sala:\n";
+    texto+=`  Peso líquido: ${pesoQuePermanece.toLocaleString("pt-BR")} kg\n`;
+    texto+=`  Peso bruto: ${pesoBrutoUtilizado.toLocaleString("pt-BR")} kg\n`;
 
-    texto += "⚠️ Há excedente de comprimidos. Será necessário retirar parte da última barrica utilizada.\n";
-    texto += "Barrica utilizada: " + (indice + 1) + "\n";
-    texto += "Peso líquido da barrica: " + pesoOriginal.toLocaleString("pt-BR") + " kg\n";
-    texto += "Quantidade retornando ao stage: " + excedenteKg.toLocaleString("pt-BR") + " kg (" + excedenteUnidades.toLocaleString("pt-BR") + " comprimidos)\n";
-    texto += "Quantidade utilizada em sala: " + pesoQuePermanece.toLocaleString("pt-BR") + " kg\n";
-
-    resultado.textContent = texto;
+    resultado.textContent=texto;
 }
 
-function limpar() {
-    document.getElementById("resultado").textContent = "";
-    document.getElementById("barricas").innerHTML = "";
+function limpar(){
+    document.getElementById("resultado").textContent="";
+    document.getElementById("barricas").innerHTML="";
+    document.getElementById("progressFill").style.width="0%";
 }
 </script>
 </body>
