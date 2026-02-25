@@ -50,12 +50,8 @@ button {
     color: #fff;
     cursor: pointer;
 }
-button:hover {
-    background: #00563a;
-}
-button.secondary {
-    background: #888;
-}
+button:hover { background: #00563a; }
+button.secondary { background: #888; }
 #resultado {
     margin-top: 20px;
     padding: 16px;
@@ -73,12 +69,7 @@ button.secondary {
     height: 20px;
     overflow: hidden;
 }
-.progress-fill {
-    height: 100%;
-    background: #006e4a;
-    width: 0%;
-    transition: width 0.3s;
-}
+.progress-fill { height: 100%; background: #006e4a; width: 0%; transition: width 0.3s; }
 .alert-verde { color: #006e4a; }
 .alert-amarelo { color: #b38f00; }
 .alert-vermelho { color: #c00000; }
@@ -101,6 +92,9 @@ button.secondary {
 <label>Quantidade necessária de comprimidos:</label>
 <input type="text" id="qtdNecessaria" placeholder="Ex: 100000">
 
+<label>Peso da tara da barrica (kg):</label>
+<input type="text" id="taraBarrica" placeholder="Ex: 3,2">
+
 <button type="button" onclick="calcular()">Calcular</button>
 <button type="button" class="secondary" onclick="limpar()">Limpar</button>
 
@@ -111,8 +105,6 @@ button.secondary {
 </div>
 
 <script>
-const taraBarrica = 3.2;
-
 /* ========================= FORMATAÇÃO AUTOMÁTICA ========================= */
 function aplicarFormatacaoAutomatica(campo, tipo="inteiro") {
     campo.addEventListener("input", function(e) {
@@ -151,17 +143,20 @@ function gerarBarricas(){
 }
 aplicarFormatacaoAutomatica(document.getElementById("pesoMedio"),"decimal");
 aplicarFormatacaoAutomatica(document.getElementById("qtdNecessaria"),"inteiro");
+aplicarFormatacaoAutomatica(document.getElementById("taraBarrica"),"decimal");
 
 /* ========================= CÁLCULO ========================= */
 function calcular(){
     let qtd=parseInt(document.getElementById("qtdBarricas").value),
         pesoMedio=parseGramas(document.getElementById("pesoMedio").value),
         necessario=parseInteiro(document.getElementById("qtdNecessaria").value),
+        tara=parseKg(document.getElementById("taraBarrica").value),
         resultado=document.getElementById("resultado"),
         progressFill=document.getElementById("progressFill");
     if(!qtd||qtd<=0){resultado.textContent="⚠️ Informe a quantidade de barricas."; return;}
     if(!pesoMedio||pesoMedio<=0){resultado.textContent="⚠️ Peso médio inválido."; return;}
     if(!necessario||necessario<=0){resultado.textContent="⚠️ Quantidade necessária inválida."; return;}
+    if(!tara||tara<=0){resultado.textContent="⚠️ Tara inválida."; return;}
     
     let pesos=[],pesoTotalLiquido=0;
     for(let i=0;i<qtd;i++){
@@ -170,7 +165,7 @@ function calcular(){
         pesos.push(p); pesoTotalLiquido+=p;
     }
 
-    let taraTotal=taraBarrica*qtd;
+    let taraTotal=tara*qtd;
     let pesoTotalBruto=pesoTotalLiquido+taraTotal;
     let comprimidosPossiveis=Math.floor(pesoTotalLiquido/pesoMedio);
 
@@ -198,16 +193,17 @@ function calcular(){
 
     let pesoOriginal=pesos[indice],pesoQuePermanece=pesoOriginal-excedenteKg;
     if(pesoQuePermanece<0)pesoQuePermanece=0;
-    let pesoBrutoOriginal=pesoOriginal+taraBarrica;
-    let pesoBrutoUtilizado=pesoQuePermanece+taraBarrica;
+    let pesoBrutoOriginal=pesoOriginal+tara;
+    let pesoBrutoUtilizado=pesoQuePermanece+tara;
 
     texto+="⚠️ Excedente identificado. Desmembramento necessário.\n\n";
     texto+=`Barrica utilizada: ${indice+1}\n`;
     texto+=`Peso líquido da barrica: ${pesoOriginal.toLocaleString("pt-BR")} kg\n`;
     texto+=`Peso bruto da barrica: ${pesoBrutoOriginal.toLocaleString("pt-BR")} kg\n\n`;
     texto+=`Quantidade retornando ao stage: ${excedenteKg.toLocaleString("pt-BR")} kg (${excedenteUnidades.toLocaleString("pt-BR")} comprimidos)\n\n`;
-    texto+="Quantidade utilizada em sala:\n";
+    texto+="Quantidade requerida:\n";
     texto+=`  Peso líquido: ${pesoQuePermanece.toLocaleString("pt-BR")} kg\n`;
+    texto+=`  Quantidade em unidades: ${Math.round(pesoQuePermanece/pesoMedio).toLocaleString("pt-BR")}\n`;
     texto+=`  Peso bruto: ${pesoBrutoUtilizado.toLocaleString("pt-BR")} kg\n`;
 
     resultado.textContent=texto;
