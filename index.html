@@ -58,6 +58,24 @@ function parseInteiro(v) {
     return parseInt(v.replace(/\./g, '').replace(',', ''), 10);
 }
 
+// Função de formatação automática em tempo real
+function aplicarFormatacaoAutomatica(campo, tipo="inteiro") {
+    campo.addEventListener("input", function(e) {
+        let valor = e.target.value.replace(/\D/g, "");
+        if (!valor) {
+            e.target.value = "";
+            return;
+        }
+        if (tipo === "inteiro") {
+            let numero = parseInt(valor, 10);
+            e.target.value = numero.toLocaleString("pt-BR");
+        } else if (tipo === "decimal") {
+            let numero = parseFloat(valor) / 1000;
+            e.target.value = numero.toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+        }
+    });
+}
+
 function gerarBarricas() {
     var qtd = parseInt(document.getElementById("qtdBarricas").value, 10);
     var div = document.getElementById("barricas");
@@ -76,11 +94,18 @@ function gerarBarricas() {
         input.id = "b" + i;
         input.placeholder = "Ex: 25,5";
 
+        aplicarFormatacaoAutomatica(input, "decimal");
+
         container.appendChild(label);
         container.appendChild(input);
         div.appendChild(container);
     }
 }
+
+// aplica formatação automática nos campos principais
+aplicarFormatacaoAutomatica(document.getElementById("pesoMedio"), "decimal");
+aplicarFormatacaoAutomatica(document.getElementById("qtdRequerida"), "inteiro");
+aplicarFormatacaoAutomatica(document.getElementById("taraBarrica"), "decimal");
 
 function calcular() {
     var qtd = parseInt(document.getElementById("qtdBarricas").value, 10);
@@ -131,7 +156,7 @@ function calcular() {
     var excedenteLocal = soma - necessario; // comprimidos
     var pesoExcedenteKg = excedenteLocal * pesoMedio;
     var pesoBruto = pesosBrutos[indice].bruto;
-    var pesoLiquido = pesoBrutos[indice].liquido - pesoExcedenteKg;
+    var pesoLiquido = pesosBrutos[indice].liquido - pesoExcedenteKg;
     if (pesoLiquido < 0) pesoLiquido = 0;
     var excedenteUnidades = Math.round(excedenteLocal);
 
